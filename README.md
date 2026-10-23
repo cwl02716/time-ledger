@@ -28,6 +28,26 @@
 2. Source 選 `Deploy from a branch`，Branch 選 `main`，資料夾選 `/ (root)`
 3. 幾分鐘後就能從 `https://<你的帳號>.github.io/time-ledger/` 打開
 
+## 檔案結構
+
+| 檔案 | 內容 |
+| --- | --- |
+| `index.html` | 頁面結構（按鈕、輸入框、各區塊的容器） |
+| `style.css` | 外觀；顏色都定義成 `:root` 裡的變數，並各有一組深色模式的值 |
+| `app.js` | 所有邏輯，依區塊分段 |
+
+`app.js` 的分段：
+
+- **設定**：`CATS`（類別）、`GROUPS`（四組）、`SLOT`／`N`（每格 30 分鐘、一天 48 格）
+- **storage**：讀寫 `localStorage`；`connect()` 只在 Claude 上才會啟用帳號同步
+- **slots**：每天的資料是 `{ mit, mitDone, slots: [48 個類別 id 或 null] }`
+- **painting**：格子的點擊與拖曳（`pointerdown` → `pointermove` → `endDrag`）
+- **timer**：計時，停止時用 `fillRange()` 換算成格子（重疊滿 15 分鐘才算一格）
+- **derived**：`totals()` 把格子加總成各類別、各組的分鐘數
+- **render**：`render()` 依目前狀態重畫今天頁；`renderWeek()` 畫週報與觀察
+
+想除錯時，可以在瀏覽器開發者工具的 Console 輸入 `S` 查看目前所有資料。
+
 ## 資料存在哪
 
 在一般瀏覽器裡，資料存在該瀏覽器的 `localStorage`，**只在那台裝置、那個瀏覽器看得到**，清除網站資料就會消失。
