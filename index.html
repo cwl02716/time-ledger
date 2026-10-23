@@ -147,8 +147,9 @@ details.timer[open] summary::before{content:"▾ "}
       <h2>這天最重要的一件事</h2>
       <div class="mit" id="mitRow">
         <input type="checkbox" class="check" id="mitDone" aria-label="完成">
-        <input type="text" id="mitText" placeholder="例如：把實驗 A 的結果畫成圖" maxlength="120">
+        <input type="text" id="mitText" placeholder="例如：把實驗 A 的結果畫成圖" maxlength="120" enterkeyhint="done">
       </div>
+      <p class="hint" id="mitHint">每天只寫一件。打完按 Enter 儲存，做完回來打勾。其他待辦不用寫在這裡。</p>
     </section>
 
     <section class="panel">
@@ -478,7 +479,8 @@ $('chips').onclick=e=>{const b=e.target.closest('[data-brush]');if(!b)return;bru
 $('nightBtn').onclick=()=>{showNight=!showNight;try{localStorage.setItem('tl-night',showNight?'1':'0')}catch(err){}render()};
 $('startBtn').onclick=startTimer;
 $('stopBtn').onclick=()=>stopTimer(false);
-$('mitText').onchange=()=>{setDay(cursor,{...dayOf(cursor),mit:$('mitText').value.trim()})};
+$('mitText').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('mitText').blur()}};
+$('mitText').onchange=()=>{const v=$('mitText').value.trim();setDay(cursor,{...dayOf(cursor),mit:v});toast(v?'已儲存，做完記得回來打勾':'已清空')};
 $('mitDone').onchange=()=>{const done=$('mitDone').checked;setDay(cursor,{...dayOf(cursor),mitDone:done});render();if(done)toast('完成這天最重要的事')};
 setInterval(()=>{if(S.running)tick()},1000);
 let lastIdx=nowIdx(),lastDay=todayKey();
