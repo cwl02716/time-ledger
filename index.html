@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>時間帳本</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column like a lab notebook page; summary first, detail below. */
+:root{
+  --bg:#f2f3f0; --surface:#ffffff; --ink:#1c2130; --muted:#646b78; --line:#dadde2; --soft:#eceef1;
+  --accent:#2f3f9e; --accent-ink:#ffffff; --warn:#b5462f;
+  --c-thesis:#2f3f9e; --c-job:#7280cf; --c-toefl:#1d8574; --c-french:#4fae9c; --c-read:#93cbbd;
+  --c-chores:#ad9c7b; --c-rest:#d5c9ae; --c-drift:#df644c;
+  --f-display:"Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13151b; --surface:#1b1e26; --ink:#e7e8ed; --muted:#9a9fac; --line:#2c303a; --soft:#242832;
+  --accent:#8e9bf2; --accent-ink:#11131a; --warn:#f08a72;
+  --c-thesis:#8190f2; --c-job:#b0b9f6; --c-toefl:#38b5a1; --c-french:#6cc8b6; --c-read:#a6dacd;
+  --c-chores:#9a8d72; --c-rest:#6e6655; --c-drift:#f07e67; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13151b; --surface:#1b1e26; --ink:#e7e8ed; --muted:#9a9fac; --line:#2c303a; --soft:#242832;
+  --accent:#8e9bf2; --accent-ink:#11131a; --warn:#f08a72;
+  --c-thesis:#8190f2; --c-job:#b0b9f6; --c-toefl:#38b5a1; --c-french:#6cc8b6; --c-read:#a6dacd;
+  --c-chores:#9a8d72; --c-rest:#6e6655; --c-drift:#f07e67; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-size:28px;margin:0;letter-spacing:.04em;line-height:1.2}
+.sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sync.cloud .dot{background:var(--c-toefl)}
+.tabs{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:10px;width:max-content}
+.tabs button{border:0;background:transparent;color:var(--muted);font:500 14px var(--f-body);padding:6px 16px;border-radius:7px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+h2{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:500}
+.daynav{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.daynav .date{font-family:var(--f-display);font-size:20px}
+.iconbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px}
+.iconbtn:disabled{opacity:.35;cursor:default}
+.linkbtn{border:0;background:none;color:var(--accent);font:500 13px var(--f-body);cursor:pointer;padding:4px}
+.mit{display:flex;gap:10px;align-items:center}
+.mit input[type=text]{flex:1;min-width:0}
+.check{width:22px;height:22px;accent-color:var(--accent);flex:none}
+input[type=text],input[type=time],select{font:15px var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mit.done input[type=text]{text-decoration:line-through;color:var(--muted)}
+.clock{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.clock .time{font-family:var(--f-num);font-size:44px;font-variant-numeric:tabular-nums;line-height:1}
+.clock .label{color:var(--muted);font-size:14px}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.chips{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:9px 10px;font:500 14px var(--f-body);cursor:pointer;text-align:left}
+.chip .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > input[type=text]{flex:1 1 180px}
+.btn{border:0;background:var(--accent);color:var(--accent-ink);font:500 14px var(--f-body);padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.stop{background:var(--warn);color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.warn{color:var(--warn);font-size:13px;margin:0}
+.ribbon{position:relative;height:26px;background:var(--soft);border-radius:6px;overflow:hidden}
+.ribbon i{position:absolute;top:0;bottom:0;min-width:2px}
+.ticks{display:flex;justify-content:space-between;font-family:var(--f-num);font-size:11px;color:var(--muted);margin-top:4px}
+.groups{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.groups{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.g{display:flex;flex-direction:column;gap:2px;padding-left:10px;border-left:3px solid var(--line)}
+.g .n{font-size:12px;color:var(--muted)}
+.g .v{font-family:var(--f-num);font-size:20px;font-variant-numeric:tabular-nums}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:92px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:14px}
+.bar .track{height:10px;background:var(--soft);border-radius:5px;overflow:hidden}
+.bar .fill{height:100%;border-radius:5px}
+.bar .m{font-family:var(--f-num);font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.entries{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.entries li{display:grid;grid-template-columns:10px 112px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.entries li:first-child{border-top:0}
+.entries .sw{width:10px;height:10px;border-radius:3px}
+.entries .t{font-family:var(--f-num);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.entries .what{min-width:0;overflow-wrap:anywhere}
+.entries .what small{color:var(--muted)}
+.del{border:0;background:none;color:var(--muted);font:13px var(--f-body);cursor:pointer;padding:4px 6px;border-radius:6px}
+.del.armed{color:#fff;background:var(--warn)}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.chart{display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px}
+.yax{position:relative;height:180px;font-family:var(--f-num);font-size:11px;color:var(--muted)}
+.yax span{position:absolute;right:0;transform:translateY(50%)}
+.plot{position:relative;height:180px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:end}
+.grid{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+.col{position:relative;height:100%;display:flex;flex-direction:column-reverse;z-index:1}
+.col i{display:block;width:100%}
+.col i:last-child{border-radius:4px 4px 0 0}
+.col.today{outline:1px solid var(--ink);outline-offset:3px;border-radius:4px}
+.xax{grid-column:2;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;text-align:center;font-size:12px;color:var(--muted)}
+.xax b{display:block;font-weight:500;color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.insights{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.form{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:8px}
+.form input[type=text]{grid-column:1/-1}
+@media (max-width:520px){.form{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.form select{grid-column:1/-1}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:9px;font-size:14px;z-index:20;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:no-preference){.fill,.col i{transition:height .3s ease,width .3s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>時間帳本</h1>
+      <p class="sub">記下時間真正花在哪裡，每週回頭看一次。</p>
+    </div>
+    <div class="sync" id="sync"><span class="dot"></span><span id="syncText">只存在這個瀏覽器</span></div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tabToday" aria-selected="true">今天</button>
+    <button role="tab" id="tabWeek" aria-selected="false">本週</button>
+  </div>
+
+  <div id="viewToday" class="wrap" style="gap:20px">
+    <section class="panel">
+      <div class="daynav">
+        <button class="iconbtn" id="prevDay" aria-label="前一天">‹</button>
+        <div style="text-align:center"><div class="date" id="dateLabel"></div><button class="linkbtn" id="goToday" hidden>回到今天</button></div>
+        <button class="iconbtn" id="nextDay" aria-label="後一天">›</button>
+      </div>
+      <h2>今天最重要的一件事</h2>
+      <div class="mit" id="mitRow">
+        <input type="checkbox" class="check" id="mitDone" aria-label="完成">
+        <input type="text" id="mitText" placeholder="例如：把實驗 A 的結果畫成圖" maxlength="120">
+      </div>
+    </section>
+
+    <section class="panel" id="timerPanel">
+      <h2>計時</h2>
+      <div class="clock"><span class="time" id="clock">00:00:00</span><span class="label" id="clockLabel">選一個類別開始計時</span></div>
+      <div class="chips" id="chips"></div>
+      <div class="row">
+        <input type="text" id="timerNote" placeholder="正在做什麼（選填）" maxlength="80">
+        <button class="btn stop" id="stopBtn" disabled>停止並記錄</button>
+      </div>
+      <p class="warn" id="staleWarn" hidden>這個計時已經超過 12 小時，可能忘了按停止。停止後可以在下方刪掉這筆。</p>
+    </section>
+
+    <section class="panel">
+      <h2>這天的分配</h2>
+      <div>
+        <div class="ribbon" id="ribbon"></div>
+        <div class="ticks"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+      </div>
+      <div class="groups" id="dayGroups"></div>
+      <div class="bars" id="dayBars"></div>
+    </section>
+
+    <section class="panel">
+      <h2>紀錄</h2>
+      <ul class="entries" id="entries"></ul>
+      <details>
+        <summary style="cursor:pointer;color:var(--accent);font-size:14px">補記一筆（忘記計時的時候）</summary>
+        <div class="form" style="margin-top:12px">
+          <select id="addCat" aria-label="類別"></select>
+          <input type="time" id="addStart" aria-label="開始時間" value="14:00">
+          <input type="time" id="addEnd" aria-label="結束時間" value="15:00">
+          <input type="text" id="addNote" placeholder="備註（選填）" maxlength="80">
+        </div>
+        <div class="row" style="margin-top:8px"><button class="btn" id="addBtn">加入這天</button></div>
+      </details>
+    </section>
+  </div>
+
+  <div id="viewWeek" class="wrap" style="gap:20px" hidden>
+    <section class="panel">
+      <h2>最近 7 天</h2>
+      <div class="groups" id="weekGroups"></div>
+      <div class="chart">
+        <div class="yax" id="yax"></div>
+        <div class="plot" id="plot"></div>
+        <div class="xax" id="xax"></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section class="panel">
+      <h2>這週的觀察</h2>
+      <ul class="insights" id="insights"></ul>
+    </section>
+    <section class="panel">
+      <h2>各類別總時數</h2>
+      <div class="bars" id="weekBars"></div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const CATS=[
+  {id:'thesis',name:'碩論',group:'main'},
+  {id:'job',name:'求職',group:'main'},
+  {id:'toefl',name:'托福單字',group:'invest'},
+  {id:'french',name:'法文',group:'invest'},
+  {id:'read',name:'課外書',group:'invest'},
+  {id:'chores',name:'生活雜事',group:'life'},
+  {id:'rest',name:'休息娛樂',group:'life'},
+  {id:'drift',name:'滑手機／拖延',group:'drift'}
+];
+const GROUPS=[
+  {id:'main',name:'主線',color:'var(--c-thesis)'},
+  {id:'invest',name:'長期投資',color:'var(--c-toefl)'},
+  {id:'life',name:'生活',color:'var(--c-chores)'},
+  {id:'drift',name:'逃避',color:'var(--c-drift)'}
+];
+const catById=Object.fromEntries(CATS.map(c=>[c.id,c]));
+const col=id=>`var(--c-${id})`;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const keyOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayKey=()=>keyOf(new Date());
+const parseKey=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(k,n)=>{const d=parseKey(k);d.setDate(d.getDate()+n);return keyOf(d)};
+const WD=['日','一','二','三','四','五','六'];
+const fmtH=min=>{if(min<1)return '0m';const h=Math.floor(min/60),m=Math.round(min%60);return h?`${h}h ${pad(m)}m`:`${m}m`};
+const hm=ts=>{const d=new Date(ts);return `${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const rid=()=>Math.random().toString(36).slice(2,10);
+
+let S={days:{},running:null};
+let mode='local',db=null,base=null;
+let view='today',cursor=todayKey();
+
+/* ---------- storage ---------- */
+const LS='time-ledger-v1';
+function loadLocal(){try{const raw=localStorage.getItem(LS);if(raw){const o=JSON.parse(raw);S.days=o.days||{};S.running=o.running||null}}catch(e){}}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+const chains={};
+function write(id,data){
+  chains[id]=(chains[id]||Promise.resolve()).then(()=>db.collection(base).doc(id).set(data))
+    .catch(e=>toast(e&&e.code==='quota_exceeded'?'儲存空間已滿，請刪掉一些舊紀錄':'同步失敗，請稍後再試'));
+}
+function persistDay(k){if(mode==='cloud')write(k,JSON.parse(JSON.stringify(dayOf(k))));else saveLocal()}
+function persistState(){if(mode==='cloud')write('state',{running:S.running});else saveLocal()}
+const dayOf=k=>S.days[k]||{mit:'',mitDone:false,entries:[]};
+function setDay(k,d){S.days[k]=d;persistDay(k)}
+
+async function connect(){
+  if(!window.claude||!window.claude.use)return;
+  try{
+    const [d,u]=await Promise.all([claude.use('db'),claude.use('user')]);
+    if(!d||!u)return;
+    const id=await u.id();
+    if(!id)return;
+    db=d;base='data/users/'+id;
+    db.collection(base).onSnapshot(snap=>{
+      if(mode!=='cloud'){mode='cloud';S={days:{},running:null};$('sync').classList.add('cloud');$('syncText').textContent='已同步到你的帳號'}
+      const days={};let running=null;
+      snap.docs.forEach(doc=>{const v=doc.data();if(doc.id==='state')running=v.running||null;else if(/^\d{4}-\d{2}-\d{2}$/.test(doc.id))days[doc.id]=v});
+      S.days=days;S.running=running;render();
+    },()=>{toast('連線中斷，重新整理頁面即可恢復')});
+  }catch(e){}
+}
+
+/* ---------- actions ---------- */
+function startCat(cat){
+  if(S.running&&S.running.cat===cat)return;
+  if(S.running)stopTimer(true);
+  S.running={cat,start:Date.now(),note:$('timerNote').value.trim()};
+  persistState();render();
+}
+function stopTimer(silent){
+  const r=S.running;if(!r)return;
+  const end=Date.now();S.running=null;persistState();
+  if(end-r.start<60000){if(!silent)toast('不到 1 分鐘，沒有記錄');render();return}
+  const k=keyOf(new Date(r.start));const d=JSON.parse(JSON.stringify(dayOf(k)));
+  d.entries.push({id:rid(),cat:r.cat,start:r.start,end,note:r.note||''});
+  setDay(k,d);$('timerNote').value='';
+  if(!silent)toast(`已記錄 ${catById[r.cat].name} ${fmtH((end-r.start)/60000)}`);
+  render();
+}
+function addManual(){
+  const cat=$('addCat').value,s=$('addStart').value,e=$('addEnd').value;
+  if(!s||!e){toast('請填開始和結束時間');return}
+  const base0=parseKey(cursor);
+  const [sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
+  const st=new Date(base0);st.setHours(sh,sm,0,0);const en=new Date(base0);en.setHours(eh,em,0,0);
+  if(en<=st){toast('結束時間要晚於開始時間');return}
+  const d=JSON.parse(JSON.stringify(dayOf(cursor)));
+  d.entries.push({id:rid(),cat,start:st.getTime(),end:en.getTime(),note:$('addNote').value.trim()});
+  setDay(cursor,d);$('addNote').value='';toast('已補記');render();
+}
+let armed=null;
+function delEntry(id,btn){
+  if(armed!==id){armed=id;document.querySelectorAll('.del.armed').forEach(b=>{b.classList.remove('armed');b.textContent='刪除'});
+    btn.classList.add('armed');btn.textContent='確定刪除';setTimeout(()=>{if(armed===id){armed=null;render()}},3000);return}
+  armed=null;const d=JSON.parse(JSON.stringify(dayOf(cursor)));d.entries=d.entries.filter(x=>x.id!==id);setDay(cursor,d);render();
+}
+
+/* ---------- derived ---------- */
+const mins=e=>Math.max(0,(e.end-e.start)/60000);
+function totals(keys){
+  const byCat=Object.fromEntries(CATS.map(c=>[c.id,0]));
+  keys.forEach(k=>dayOf(k).entries.forEach(e=>{if(byCat[e.cat]!=null)byCat[e.cat]+=mins(e)}));
+  const byGroup=Object.fromEntries(GROUPS.map(g=>[g.id,0]));
+  CATS.forEach(c=>byGroup[c.group]+=byCat[c.id]);
+  const all=Object.values(byCat).reduce((a,b)=>a+b,0);
+  return {byCat,byGroup,all};
+}
+function groupTiles(t){
+  return GROUPS.map(g=>`<div class="g" style="border-left-color:${g.color}"><span class="n">${g.name}</span><span class="v">${fmtH(t.byGroup[g.id])}</span></div>`).join('');
+}
+function catBars(t,divisor){
+  const max=Math.max(1,...Object.values(t.byCat));
+  return CATS.map(c=>{const v=t.byCat[c.id];return `<div class="bar"><span>${c.name}</span><div class="track"><div class="fill" style="width:${v/max*100}%;background:${col(c.id)}"></div></div><span class="m">${fmtH(v)}${divisor?`<br><small>日均 ${fmtH(v/divisor)}</small>`:''}</span></div>`}).join('');
+}
+
+/* ---------- render ---------- */
+function render(){
+  const tk=todayKey();
+  $('tabToday').setAttribute('aria-selected',view==='today');
+  $('tabWeek').setAttribute('aria-selected',view==='week');
+  $('viewToday').hidden=view!=='today';$('viewWeek').hidden=view!=='week';
+
+  // day nav
+  const dd=parseKey(cursor);
+  $('dateLabel').textContent=`${dd.getMonth()+1} 月 ${dd.getDate()} 日（${WD[dd.getDay()]}）`;
+  $('nextDay').disabled=cursor>=tk;$('goToday').hidden=cursor===tk;
+  const day=dayOf(cursor);
+  if(document.activeElement!==$('mitText'))$('mitText').value=day.mit||'';
+  $('mitDone').checked=!!day.mitDone;$('mitRow').classList.toggle('done',!!day.mitDone);
+
+  // timer
+  const r=S.running;
+  $('chips').innerHTML=CATS.map(c=>`<button class="chip" data-cat="${c.id}" aria-pressed="${!!(r&&r.cat===c.id)}"><span class="sw" style="background:${col(c.id)}"></span>${c.name}</button>`).join('');
+  $('stopBtn').disabled=!r;
+  if(r&&document.activeElement!==$('timerNote'))$('timerNote').value=r.note||'';
+  tick();
+
+  // day breakdown
+  const ents=[...day.entries].sort((a,b)=>a.start-b.start);
+  const d0=dd.getTime(),span=86400000;
+  $('ribbon').innerHTML=ents.map(e=>{const l=Math.max(0,(e.start-d0)/span*100),w=Math.min(100-l,(e.end-e.start)/span*100);return `<i style="left:${l}%;width:${w}%;background:${col(e.cat)}" title="${esc(catById[e.cat]?.name||'')} ${hm(e.start)}–${hm(e.end)}"></i>`}).join('');
+  const t=totals([cursor]);
+  $('dayGroups').innerHTML=groupTiles(t);
+  $('dayBars').innerHTML=t.all?catBars(t):'<p class="empty">這天還沒有紀錄。上面選一個類別按下去，就開始計時了。</p>';
+  $('entries').innerHTML=ents.length?ents.map(e=>`<li><span class="sw" style="background:${col(e.cat)}"></span><span class="t">${hm(e.start)}–${hm(e.end)}</span><span class="what">${esc(catById[e.cat]?.name||e.cat)} · ${fmtH(mins(e))}${e.note?`<br><small>${esc(e.note)}</small>`:''}</span><button class="del${armed===e.id?' armed':''}" data-del="${e.id}">${armed===e.id?'確定刪除':'刪除'}</button></li>`).join(''):'<li style="display:block"><p class="empty">還沒有紀錄。</p></li>';
+
+  if(view==='week')renderWeek(tk);
+}
+
+function renderWeek(tk){
+  const keys=[...Array(7)].map((_,i)=>addDays(tk,i-6));
+  const prev=[...Array(7)].map((_,i)=>addDays(tk,i-13));
+  const t=totals(keys),tp=totals(prev);
+  $('weekGroups').innerHTML=groupTiles(t);
+  const perDay=keys.map(k=>totals([k]));
+  const maxH=Math.max(2,...perDay.map(p=>p.all/60));
+  const top=Math.ceil(maxH/2)*2,steps=top<=6?top/2:top<=12?top/4:top/6;
+  let y='',g='';for(let v=0;v<=top;v+=steps){const p=v/top*100;y+=`<span style="bottom:${p}%">${v}h</span>`;g+=`<div class="grid" style="bottom:${p}%"></div>`}
+  $('yax').innerHTML=y;
+  $('plot').innerHTML=g+perDay.map((p,i)=>`<div class="col${keys[i]===tk?' today':''}" title="${fmtH(p.all)}">${GROUPS.map(gr=>p.byGroup[gr.id]>0?`<i style="height:${p.byGroup[gr.id]/60/top*100}%;background:${gr.color}"></i>`:'').join('')}</div>`).join('');
+  $('xax').innerHTML=keys.map(k=>{const d=parseKey(k);return `<span><b>${WD[d.getDay()]}</b>${d.getMonth()+1}/${d.getDate()}</span>`}).join('');
+  $('legend').innerHTML=GROUPS.map(gr=>`<span><i style="background:${gr.color}"></i>${gr.name}</span>`).join('');
+  $('weekBars').innerHTML=catBars(t,7);
+
+  const ins=[];
+  if(!t.all){ins.push('這 7 天還沒有紀錄。先記滿一週，這裡就會開始有東西可以看。')}
+  else{
+    const th=t.byCat.thesis,thp=tp.byCat.thesis;
+    ins.push(`碩論 ${fmtH(th)}，平均每天 ${fmtH(th/7)}`+(thp?`，上週是 ${fmtH(thp)}（${th>=thp?'多了':'少了'} ${fmtH(Math.abs(th-thp))}）。`:'。'));
+    const mainPct=Math.round(t.byGroup.main/t.all*100),driftPct=Math.round(t.byGroup.drift/t.all*100);
+    ins.push(`有記錄的時間裡，主線佔 ${mainPct}%，逃避佔 ${driftPct}%。`);
+    if(t.byGroup.invest>t.byGroup.main)ins.push('長期投資（單字、法文、閱讀）比主線還多。如果碩論這週有進度目標，可以考慮把它們移到碩論之後做。');
+    const mitSet=keys.filter(k=>dayOf(k).mit).length,mitDone=keys.filter(k=>dayOf(k).mitDone).length;
+    if(mitSet)ins.push(`有寫「最重要的一件事」的天數 ${mitSet} 天，完成 ${mitDone} 天。`);
+    const thesisStarts=keys.flatMap(k=>dayOf(k).entries.filter(e=>e.cat==='thesis').map(e=>new Date(e.start).getHours()));
+    if(thesisStarts.length>=3){const c={};thesisStarts.forEach(h=>c[h]=(c[h]||0)+1);const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];ins.push(`你最常在 ${pad(best)}:00 左右開始做碩論，這可能是你最容易進入狀態的時段。`)}
+    const empty=keys.filter(k=>!dayOf(k).entries.length).length;
+    if(empty)ins.push(`有 ${empty} 天完全沒記錄。漏記也是一種資訊：那幾天通常在做什麼？`);
+  }
+  $('insights').innerHTML=ins.map(s=>`<li>${esc(s)}</li>`).join('');
+}
+
+function tick(){
+  const r=S.running;
+  if(!r){$('clock').textContent='00:00:00';$('clockLabel').textContent='選一個類別開始計時';$('staleWarn').hidden=true;return}
+  const s=Math.floor((Date.now()-r.start)/1000);
+  $('clock').textContent=`${pad(Math.floor(s/3600))}:${pad(Math.floor(s%3600/60))}:${pad(s%60)}`;
+  $('clockLabel').textContent=`${catById[r.cat]?.name||''} · 從 ${hm(r.start)} 開始`;
+  $('staleWarn').hidden=s<43200;
+}
+
+let toastT;
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------- wiring ---------- */
+$('addCat').innerHTML=CATS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+$('tabToday').onclick=()=>{view='today';render()};
+$('tabWeek').onclick=()=>{view='week';render()};
+$('prevDay').onclick=()=>{cursor=addDays(cursor,-1);armed=null;render()};
+$('nextDay').onclick=()=>{if(cursor<todayKey()){cursor=addDays(cursor,1);armed=null;render()}};
+$('goToday').onclick=()=>{cursor=todayKey();render()};
+$('chips').onclick=e=>{const b=e.target.closest('[data-cat]');if(b)startCat(b.dataset.cat)};
+$('stopBtn').onclick=()=>stopTimer(false);
+$('timerNote').onchange=()=>{if(S.running){S.running={...S.running,note:$('timerNote').value.trim()};persistState()}};
+$('mitText').onchange=()=>{const d={...dayOf(cursor)};d.mit=$('mitText').value.trim();setDay(cursor,d)};
+$('mitDone').onchange=()=>{const d={...dayOf(cursor)};d.mitDone=$('mitDone').checked;setDay(cursor,d);render();if(d.mitDone)toast('完成今天最重要的事')};
+$('entries').onclick=e=>{const b=e.target.closest('[data-del]');if(b)delEntry(b.dataset.del,b)};
+$('addBtn').onclick=addManual;
+setInterval(()=>{if(S.running)tick()},1000);
+let lastDay=todayKey();
+setInterval(()=>{const k=todayKey();if(k!==lastDay){if(cursor===lastDay)cursor=k;lastDay=k;render()}},60000);
+
+loadLocal();render();connect();
+</script>
+
+</body>
+</html>
